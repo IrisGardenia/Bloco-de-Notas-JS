@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Tarefas</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f4f4;
+    }
+
+    .container {
+        max-width: 90%;
+        width: 500px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+
+    button {
+        padding: 8px 16px;
+        background-color: #00aaff;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color:  #068fd4;
+    }
+
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+   
+
+    .task-done {
+        text-decoration: line-through;
+        color: rgba(255, 0, 0, 0.736); /* Cor do texto vermelho */
+    }
+
+    li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    word-wrap: break-word; /* Permite que o texto quebre em várias linhas */
+}
+
+span {
+    flex: 1; /* Faz o texto ocupar todo o espaço disponível */
+    margin-right: 5px; /* Distância de 5px dos botões */
+}
+
+.task-buttons {
+    display: flex;
+}
+
+.task-buttons button {
+    margin-left: 5px; /* Adiciona margem à esquerda entre os botões */
+}
+
+
+
+
+    .edit-task-input {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #ffffff;
+        min-width: 160px;
+        box-shadow: 0 2px 5px  0.145;
+        z-index: 1;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    .dropdown-content button {
+       width: 100%;
+        text-align: left;
+        padding: 8px;
+        background-color: #ffffff;
+        border: none;
+        cursor: pointer;
+        color: rgb(0, 0, 0); 
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dropdown-content button:hover {
+        background-color:  #068fd4 ;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>Lista de Tarefas</h2>
+    <input type="text" id="taskInput" placeholder="Adicionar nova tarefa">
+    <button id="addTaskBtn">Adicionar</button>
+    <ul id="taskList"></ul>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const taskInput = document.getElementById("taskInput");
+    const addTaskBtn = document.getElementById("addTaskBtn");
+    const taskList = document.getElementById("taskList");
+
+    // Verifica se há tarefas armazenadas localmente
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    // Função para renderizar a lista de tarefas
+    function renderTasks() {
+        taskList.innerHTML = "";
+        tasks.forEach((task, index) => {
+            const li = document.createElement("li");
+            if (task.editing) {
+                li.innerHTML = `
+                    <input class="edit-task-input" type="text" value="${task.text}">
+                    <div class="task-buttons">
+                        <button class="saveTaskBtn" data-index="${index}">Salvar</button>
+                        <button class="cancelEditBtn" data-index="${index}">Cancelar</button>
+                    </div>
+                `;
+            } else {
+                li.innerHTML = `
+                    <span class="${task.done ? 'task-done' : ''}">${task.text}</span>
+                    <div class="task-buttons">
+                        <button class="completeTaskBtn" data-index="${index}">${task.done ? 'Desfazer' : 'Concluir'}</button>
+                        <!-- Botão de três pontinhos para abrir o menu de opções -->
+                        <div class="dropdown">
+                            <button class="dropdownBtn">&#8942;</button>
+                            <div class="dropdown-content">
+                                <button class="editTaskBtn" data-index="${index}">Editar</button>
+                                <button class="removeTaskBtn" data-index="${index}">Remover</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            taskList.appendChild(li);
+        });
+    }
+
+    // Adiciona uma nova tarefa
+    function addTask() {
+        const taskText = taskInput.value.trim();
+        if (taskText !== "") {
+            tasks.push({ text: taskText, done: false, editing: false });
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            taskInput.value = "";
+            renderTasks();
+        }
+    }
+
+    // Remove uma tarefa
+    function removeTask(index) {
+        tasks.splice(index, 1);
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // Edita uma tarefa
+    function editTask(index, newText) {
+        tasks[index].text = newText;
+        tasks[index].editing = false;
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // Marca ou desmarca uma tarefa como concluída
+    function toggleTask(index) {
+        tasks[index].done = !tasks[index].done;
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // Adiciona um ouvinte de evento para o botão "Adicionar"
+    addTaskBtn.addEventListener("click", addTask);
+
+    // Adiciona ouvintes de evento delegados para os botões "Remover", "Concluir/Desfazer" e "Editar"
+    taskList.addEventListener("click", function(event) {
+        const index = event.target.getAttribute("data-index");
+        if (event.target.classList.contains("removeTaskBtn")) {
+            removeTask(index);
+        } else if (event.target.classList.contains("completeTaskBtn")) {
+            toggleTask(index);
+        } else if (event.target.classList.contains("editTaskBtn")) { // Aqui estava a duplicação
+            tasks[index].editing = true;
+            renderTasks();
+        } else if (event.target.classList.contains("saveTaskBtn")) {
+            const newText = event.target.parentElement.previousElementSibling.value;
+            editTask(index, newText);
+        } else if (event.target.classList.contains("cancelEditBtn")) {
+            tasks[index].editing = false;
+            renderTasks();
+        }
+    });
+
+    // Renderiza as tarefas ao carregar a página
+    renderTasks();
+});
+
+</script>
+</body>
+</html>
+
